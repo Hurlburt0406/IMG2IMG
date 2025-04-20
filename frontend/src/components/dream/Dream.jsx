@@ -1,48 +1,21 @@
-import React, { useEffect, useCallback, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import './dream.css';
 import { useDropzone } from 'react-dropzone';
 import axios from 'axios'
 import ClipLoader from "react-spinners/ClipLoader";
-import image_mask from '../../assets/mask_image.png'
-import { ToastContainer, toast } from 'react-toastify';
+import { toast } from 'react-toastify';
 
-const baseUrl = "http://65.108.27.137:7777/";
+const baseUrl = "https://bundleoneth.tech/";
+// const baseUrl = "http://135.181.161.253:7777/";
 
 export const Dream = () => {
   const [pictureRoute, setPictureRoute] = useState('')
-  const [maskRoute, setMaskRoute] = useState('')
-  const [nftRoute1, setNftRoute1] = useState('')
-  const [nftRoute2, setNftRoute2] = useState('')
-  const [nftRoute3, setNftRoute3] = useState('')
+  const [nftRoute, setNftRoute] = useState('')
   const [prompt, setPrompt] = useState('')
   const onPromptChange = (event) => {
     setPrompt(event.target.value);
   };
   
-  useEffect(() => {
-    const image = new Image();
-    // Set the image source to the URL
-    image.src = image_mask;
-    // Wait for the image to load
-    image.onload = function() {
-      // Create a canvas element
-      const canvas = document.createElement('canvas');
-
-      // Set the canvas dimensions to match the image dimensions
-      canvas.width = image.width;
-      canvas.height = image.height;
-
-      // Draw the image on the canvas
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(image, 0, 0);
-
-      // Get the data URL for the canvas
-      const dataUrl = canvas.toDataURL('image/png');
-      setMaskRoute(dataUrl);
-      // dataUrl is the URI-based data URL for the image in PNG format
-    };
-  }, []);
-
   const onDrop = useCallback((acceptedFiles) => {
     // Handle the uploaded files here
     console.log(acceptedFiles[0]);
@@ -71,6 +44,40 @@ export const Dream = () => {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });
   const [bLoadingFlag, setLoadingFlag] = useState(false)
 
+  // const onGenerateOriginal = async () => {
+  //   if(prompt === '')
+  //   {
+  //     toast.error("Prompt is empty.");
+  //     return;
+  //   }
+  //   setLoadingFlag(true);
+
+  //   const response = await axios.post(
+  //     baseUrl + 'generateImage',
+  //     {
+  //       prompt : prompt
+  //     },
+  //     {
+  //       headers: {
+  //         'Content-Type': 'application/json'
+  //       }
+  //     }
+  //   )
+  //   console.log("glory", response.data.response);
+  //   setPictureRoute(response.data.response.output);
+  //   setLoadingFlag(false);
+  // };
+
+  const onSetReferenceImage = async () => {
+    if(nftRoute === '')
+    {
+      toast.error("Result image is not generated.");
+      return;
+    }
+
+    setPictureRoute(nftRoute);
+  }
+
   const onGenerate = async () => {
     if(pictureRoute === '')
     {
@@ -84,45 +91,12 @@ export const Dream = () => {
       return;
     }
     setLoadingFlag(true);
+
     const response = await axios.post(
-      baseUrl + 'getMaskimage',
-      {
-        image_original : pictureRoute
-      },
-      {
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      }
-    )
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    fetch(response.data.response.output) // Fetch the image data from the server
-    .then((response) => response.blob()) // Get the image data as a Blob
-    .then((blob) => {
-      const image = new Image();
-      const imageUrl = URL.createObjectURL(blob);
-
-      image.onload = function () {
-        canvas.width = image.width;
-        canvas.height = image.height;
-        ctx.drawImage(image, 0, 0);
-        const dataUrl = canvas.toDataURL('image/png');
-        setMaskRoute(dataUrl);
-        URL.revokeObjectURL(imageUrl);
-      };
-      image.src = imageUrl; // Set the image source to the object URL
-    })
-    .catch((error) => {
-      console.error('Failed to fetch image data:', error);
-    });
-
-    const response1 = await axios.post(
       baseUrl + 'getImage',
       {
         image_original : pictureRoute,
-        prompt : prompt,
-        image_mask : maskRoute
+        prompt : prompt
       },
       {
         headers: {
@@ -130,37 +104,8 @@ export const Dream = () => {
         }
       }
     )
-    setNftRoute1(response1.data.response.output[0]);
-
-    const response2 = await axios.post(
-      baseUrl + 'getImage',
-      {
-        image_original : pictureRoute,
-        prompt : prompt,
-        image_mask : maskRoute
-      },
-      {
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      }
-    )
-    setNftRoute2(response2.data.response.output[0]);
-
-    const response3 = await axios.post(
-      baseUrl + 'getImage',
-      {
-        image_original : pictureRoute,
-        prompt : prompt,
-        image_mask : maskRoute
-      },
-      {
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      }
-    )
-    setNftRoute3(response3.data.response.output[0]);
+    console.log("glory", response.data.response);
+    setNftRoute(response.data.response.output[0]);
     setLoadingFlag(false);
   };
 
@@ -170,6 +115,9 @@ export const Dream = () => {
         <h1><b>Generating images <span>using AI</span> for everyone.</b></h1>
       </div>
       <div className='generate'>
+        <button type="button" onClick={onSetReferenceImage}>Set image as a reference image</button>
+        &nbsp;&nbsp;&nbsp;&nbsp;
+        &nbsp;&nbsp;&nbsp;&nbsp;
         <button type="button" onClick={onGenerate}>Generate your image</button>
       </div>
       <div className="gpt3__header-content">
@@ -196,7 +144,7 @@ export const Dream = () => {
             <div className='Uploaded'></div>
           }
           {(pictureRoute !== '') &&
-            <img src={pictureRoute} alt="ai" />
+            <img src={pictureRoute} alt="ai" width="300" height="500" />
           }
           <div className="spinner-wrapper">
             {(bLoadingFlag === true) &&
@@ -213,21 +161,9 @@ export const Dream = () => {
         </div>
       </div>
       <div className="gpt3__header-content">
-        {(nftRoute1 !== '') &&
-          <div className="result1">
-            <img src={maskRoute} alt="ai" />
-          </div>
-        }
-
-        {(nftRoute2 !== '') &&
-          <div className="result1">
-            <img src={nftRoute2} alt="ai" />
-          </div>
-        }
-
-        {(nftRoute3 !== '') &&
-          <div className="result1">
-            <img src={nftRoute3} alt="ai" />
+        {(nftRoute !== '') &&
+          <div className="result">
+            <img src={nftRoute} alt="ai" />
           </div>
         }
       </div>
